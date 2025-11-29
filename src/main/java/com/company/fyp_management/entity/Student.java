@@ -1,4 +1,6 @@
 package com.company.fyp_management.entity;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
@@ -25,9 +27,13 @@ public class Student {
     @Column(name = "supervisor_id", nullable = false)
     private Integer supervisorId = -1;
 
+    @CreationTimestamp
+    private LocalDateTime registration_date;
+
+
     // Getters and setters
-    public Integer getId() {
-        return student_id;
+    public String getId() {
+        return "STU-" + String.valueOf(student_id);
     }
 
     public String getEmail() {
@@ -68,6 +74,10 @@ public class Student {
 
     public void setSupervisorId(Integer supervisorId) {
         this.supervisorId = supervisorId;
+    }
+
+    public LocalDateTime getRegistrationDate() {
+        return registration_date;
     }
 
 }

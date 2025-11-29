@@ -1,4 +1,6 @@
 package com.company.fyp_management.entity;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
@@ -25,9 +27,13 @@ public class Faculty {
     @Column(nullable = false)
     private String status;
 
+    @CreationTimestamp
+    private LocalDateTime registration_date;
+
+
     // Getters and setters
-    public Integer getId() {
-        return faculty_id;
+    public String getId() {
+        return "FAC-" + String.valueOf(faculty_id);
     }
 
     public String getEmail() {
@@ -66,8 +72,17 @@ public class Faculty {
         return status;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public LocalDateTime getRegistrationDate() {
+        return registration_date;
     }
 
+    public void setStatus(String status) {
+    if ("Supervisor".equals(status) || 
+        "Evaluation Committee Member".equals(status) || 
+        "FYP Committee Member".equals(status)) {
+        this.status = status;
+    } else {
+        this.status = "";
+    }
+    }
 }
