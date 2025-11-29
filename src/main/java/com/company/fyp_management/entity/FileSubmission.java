@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "file_submissions")
 public class FileSubmission {
     @Id
     @Column(unique = true, nullable = false)
@@ -19,6 +20,8 @@ public class FileSubmission {
     @JoinColumn(name = "assignment_id", nullable = false)
     private Assignment assignment;
 
+    private String filename;
+
     @CreationTimestamp
     private LocalDateTime submission_datetime;
 
@@ -30,6 +33,15 @@ public class FileSubmission {
     public Student getStudent() {
         return student;
     }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+    
 
     public LocalDateTime getSubmission_datetime() {
         return submission_datetime;

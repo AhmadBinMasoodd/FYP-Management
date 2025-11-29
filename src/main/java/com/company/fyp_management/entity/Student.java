@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "students")
+@EntityListeners(PasswordEncodingListener.class) // NEW: ensure password encoding before save/update
 public class Student {
     @Id
     @Column(unique = true, nullable = false)

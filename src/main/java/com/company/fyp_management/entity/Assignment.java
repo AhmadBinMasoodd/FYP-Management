@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "assignments")
 public class Assignment {
     @Id
     @Column(unique = true, nullable = false)
