@@ -16,12 +16,12 @@ public class Feedback {
     @JoinColumn(name = "submission_id", nullable = false)
     private FileSubmission submission;
 
-    @Column(name = "content", nullable = false)
+    @Column(nullable = false)
     private String content;
 
     @CreationTimestamp
-    @Column(name = "submitted_at", nullable = false, updatable = false)
-    private LocalDateTime submittedAt;
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime submitted_at;
 
     // Getters and setters
     public Integer getId() {
@@ -59,11 +59,11 @@ public class Feedback {
     }
 
     public LocalDateTime getSubmittedAt() {
-        return submittedAt;
+        return submitted_at;
     }
 
     public void setSubmittedAt(LocalDateTime submittedAt) {
-        this.submittedAt = submittedAt;
+        this.submitted_at = submittedAt;
     }
     
 }

@@ -1,8 +1,7 @@
 package com.company.fyp_management.controller;
-
 import com.company.fyp_management.entity.Faculty;
-import org.springframework.web.bind.annotation.*;
 import com.company.fyp_management.service.FacultyService;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")

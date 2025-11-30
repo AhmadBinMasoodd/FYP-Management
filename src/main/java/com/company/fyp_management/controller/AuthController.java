@@ -80,6 +80,9 @@ public class AuthController {
 			);
 			SecurityContextHolder.getContext().setAuthentication(auth);
 
+			// Persist security context into HTTP session to survive across requests
+			session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+
 			return ResponseEntity.ok(java.util.Map.of("message", "Login successful", "role", userRole));
 		};
 
@@ -109,7 +112,20 @@ public class AuthController {
 					java.lang.reflect.Method m = faculty.getClass().getMethod("getPassword");
 					Object stored = m.invoke(faculty);
 					if (stored != null && passwordEncoder.matches(password, stored.toString())) { // use encoder
-						return onSuccess.apply(faculty, "faculty");
+						// determine role from faculty.status (fallback to "faculty")
+						String roleFromStatus = "faculty";
+						try {
+							java.lang.reflect.Method mStatus = faculty.getClass().getMethod("getStatus");
+							Object st = mStatus.invoke(faculty);
+							if (st != null && !st.toString().isBlank()) {
+								roleFromStatus = st.toString();
+							}
+						} catch (NoSuchMethodException ns) {
+							// keep fallback
+						} catch (Exception e) {
+							// reflection error - keep fallback
+						}
+						return onSuccess.apply(faculty, roleFromStatus);
 					}
 				} catch (NoSuchMethodException e) {
 					// fallthrough
