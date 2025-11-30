@@ -28,6 +28,10 @@ public class StudentService {
         return studentRepository.save(student);
     }
 
+    public Student updateStudent(Student updatedStudent) {
+        return studentRepository.save(updatedStudent);
+    }
+
     public Student updateStudent(Integer id, Student updatedStudent) {
         return studentRepository.findById(id)
                 .map(student -> {
@@ -43,5 +47,9 @@ public class StudentService {
 
     public void deleteStudent(Integer id) {
         studentRepository.deleteById(id);
+    }
+
+    public List<Student> getStudentsBySupervisorId(Integer supervisorId) {
+        return studentRepository.findBySupervisorId(supervisorId);
     }
 }

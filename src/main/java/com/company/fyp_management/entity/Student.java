@@ -49,6 +49,10 @@ public class Student {
         return "STU-" + String.valueOf(student_id);
     }
 
+    public Integer getNumericId() {
+        return student_id;
+    }
+
     public String getEmail() {
         return email;
     }

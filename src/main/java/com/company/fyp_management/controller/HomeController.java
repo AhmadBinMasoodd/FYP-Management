@@ -1,7 +1,9 @@
 package com.company.fyp_management.controller;
 
 import com.company.fyp_management.entity.FileSubmission;
+import com.company.fyp_management.entity.DocumentTypes;
 import com.company.fyp_management.repository.FileSubmissionRepository;
+import com.company.fyp_management.service.DocumentTypesService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
+import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
@@ -23,9 +26,17 @@ public class HomeController {
     private String uploadDir;
 
     private final FileSubmissionRepository fileSubmissionRepository;
+    private final DocumentTypesService documentTypesService;
 
-    public HomeController(FileSubmissionRepository fileSubmissionRepository) {
+    public HomeController(FileSubmissionRepository fileSubmissionRepository, DocumentTypesService documentTypesService) {
         this.fileSubmissionRepository = fileSubmissionRepository;
+        this.documentTypesService = documentTypesService;
+    }
+
+    @GetMapping(value = "/documenttypes")
+    public List<DocumentTypes> getDocumentTypes() {
+        List<DocumentTypes> docTypes = documentTypesService.getAllDocumentTypes();
+        return docTypes;
     }
 
     @PostMapping(value = "/download", consumes = "application/json")

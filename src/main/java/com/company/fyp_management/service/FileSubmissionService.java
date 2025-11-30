@@ -73,4 +73,13 @@ public class FileSubmissionService {
     public List<FileSubmission> getSubmissionsByStudentId(Integer studentId) {
         return fileSubmissionRepository.findAllByStudentIdOrderBySubmissionDatetimeDesc(studentId);
     }
+
+    public FileSubmission getFileSubmissionById(Integer id) {
+        return fileSubmissionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("FileSubmission not found with id " + id));
+    }
+
+    public FileSubmission updateFileSubmission(FileSubmission updatedFileSubmission) {
+        return fileSubmissionRepository.save(updatedFileSubmission);
+    }
 }
