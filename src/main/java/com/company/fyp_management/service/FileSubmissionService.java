@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Objects;
+import java.util.List;
 
 @Service
 public class FileSubmissionService {
@@ -66,5 +67,10 @@ public class FileSubmissionService {
         // set saved filename on entity and persist
         fileSubmission.setFilename(storedFilename);
         return fileSubmissionRepository.save(fileSubmission);
+    }
+
+    // New: fetch all submissions for a student sorted by submission_datetime desc
+    public List<FileSubmission> getSubmissionsByStudentId(Integer studentId) {
+        return fileSubmissionRepository.findAllByStudentIdOrderBySubmissionDatetimeDesc(studentId);
     }
 }

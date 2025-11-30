@@ -5,6 +5,7 @@ import com.company.fyp_management.entity.Student;
 import org.springframework.web.bind.annotation.*;
 import com.company.fyp_management.service.StudentService;
 import com.company.fyp_management.service.FileSubmissionService;
+import com.company.fyp_management.service.FeedbackService; // added
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
@@ -16,6 +17,12 @@ import java.util.Optional;
 import com.company.fyp_management.repository.StudentRepository;
 import com.company.fyp_management.repository.DocumentTypesRepository;
 import com.company.fyp_management.entity.DocumentTypes;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.company.fyp_management.entity.Feedback; // added
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
@@ -25,16 +32,19 @@ public class StudentController {
     private final FileSubmissionService fileSubmissionService;
     private final StudentRepository studentRepository;             // NEW
     private final DocumentTypesRepository documentTypesRepository; // NEW
+    private final FeedbackService feedbackService;                 // NEW
 
-    // constructor updated to accept repositories
+    // constructor updated to accept repositories and feedbackService
     public StudentController(StudentService studentService,
                              FileSubmissionService fileSubmissionService,
                              StudentRepository studentRepository,
-                             DocumentTypesRepository documentTypesRepository) {
+                             DocumentTypesRepository documentTypesRepository,
+                             FeedbackService feedbackService) { // updated
         this.studentService = studentService;
         this.fileSubmissionService = fileSubmissionService;
         this.studentRepository = studentRepository;
         this.documentTypesRepository = documentTypesRepository;
+        this.feedbackService = feedbackService;
     }
 
     @PostMapping("/register")
@@ -99,6 +109,61 @@ public class StudentController {
         return saved;
     }
 
+    @GetMapping("/mysubmissions")
+    @PreAuthorize("hasRole('STUDENT')")
+    public List<SubmissionWithFeedback> getMySubmissions(HttpSession session) {
+        // resolve userId from session
+        Object uid = session.getAttribute("userId");
+        if (uid == null) {
+            throw new IllegalArgumentException("No authenticated user in session");
+        }
+        Integer userId;
+        if (uid instanceof Number) {
+            userId = ((Number) uid).intValue();
+        } else {
+            try {
+                userId = Integer.parseInt(uid.toString());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid userId in session");
+            }
+        }
+
+        // fetch submissions
+        List<FileSubmission> submissions = fileSubmissionService.getSubmissionsByStudentId(userId);
+
+        // build result pairing each submission with its feedback list (empty when none)
+        List<SubmissionWithFeedback> result = new ArrayList<>();
+        for (FileSubmission submission : submissions) {
+            Integer submissionId = submission.getFile_id();
+            List<Feedback> feedbacks = feedbackService.getFeedbacksBySubmissionId(submissionId);
+            if (feedbacks == null) feedbacks = List.of();
+            result.add(new SubmissionWithFeedback(submission, feedbacks));
+        }
+        return result;
+    }
+
+    
+    // helper classes
+    // DTO returned as JSON: contains submission and feedback list
+    public static class SubmissionWithFeedback {
+        private final FileSubmission submission;
+        private final List<Feedback> feedbacks;
+
+        public SubmissionWithFeedback(FileSubmission submission, List<Feedback> feedbacks) {
+            this.submission = submission;
+            this.feedbacks = feedbacks;
+        }
+
+        public FileSubmission getSubmission() {
+            return submission;
+        }
+
+        public List<Feedback> getFeedbacks() {
+            return feedbacks;
+        }
+    }
+
+    // helper functions
     // helper to normalize docType consistently across checks
     private String normalizeDocType(String docType) {
         if (docType == null) return "";
