@@ -9,7 +9,6 @@ import com.company.fyp_management.service.FeedbackService; // added
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestPart;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
@@ -17,9 +16,6 @@ import java.util.Optional;
 import com.company.fyp_management.repository.StudentRepository;
 import com.company.fyp_management.repository.DocumentTypesRepository;
 import com.company.fyp_management.entity.DocumentTypes;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
 import com.company.fyp_management.entity.Feedback; // added
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +46,33 @@ public class StudentController {
     @PostMapping("/register")
     public Student registerStudent(@RequestBody Student student) {
         return studentService.createStudent(student);
+    }
+
+    @GetMapping("/status")
+    @PreAuthorize("hasRole('STUDENT')") // changed: use hasRole('STUDENT'), Spring will match ROLE_STUDENT authority
+    public Student getSubmissionStatus(HttpSession session) {
+        // resolve userId from session
+        Object uid = session.getAttribute("userId");
+        if (uid == null) {
+            throw new IllegalArgumentException("No authenticated user in session");
+        }
+        Integer userId;
+        if (uid instanceof Number) {
+            userId = ((Number) uid).intValue();
+        } else {
+            try {
+                userId = Integer.parseInt(uid.toString());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid userId in session");
+            }
+        }
+
+        // load student
+        Optional<Student> studentOpt = studentRepository.findById(userId);
+        if (studentOpt.isEmpty()) {
+            throw new IllegalArgumentException("Student not found for id: " + userId);
+        }
+        return studentOpt.get();
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -142,7 +165,6 @@ public class StudentController {
         return result;
     }
 
-    
     // helper classes
     // DTO returned as JSON: contains submission and feedback list
     public static class SubmissionWithFeedback {
