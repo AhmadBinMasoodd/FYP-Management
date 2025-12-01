@@ -3,6 +3,8 @@ import com.company.fyp_management.entity.Faculty;
 import com.company.fyp_management.entity.FileSubmission;
 import com.company.fyp_management.entity.DocumentTypes;
 import com.company.fyp_management.entity.Student;
+import com.company.fyp_management.entity.Grades;
+import com.company.fyp_management.service.GradesService;
 import com.company.fyp_management.service.FacultyService;
 import com.company.fyp_management.service.StudentService;
 import com.company.fyp_management.service.FileSubmissionService;
@@ -22,11 +24,13 @@ public class FacultyController {
     private final FacultyService facultyService;
     private final StudentService studentService;
     private final FileSubmissionService fileSubmissionService;
+    private final GradesService gradesService;
 
-    public FacultyController(FacultyService facultyService, StudentService studentService, FileSubmissionService fileSubmissionService) {
+    public FacultyController(FacultyService facultyService, StudentService studentService, FileSubmissionService fileSubmissionService, GradesService gradesService ) {
         this.facultyService = facultyService;
         this.studentService = studentService;
         this.fileSubmissionService = fileSubmissionService;
+        this.gradesService = gradesService;
     }
 
     @PostMapping("/register")
@@ -61,6 +65,13 @@ public class FacultyController {
     @PreAuthorize("hasRole('SUPERVISOR')")
     public java.util.List<Student> getUnassignedStudents() {
         List<Student> students = studentService.getStudentsBySupervisorId(-1);
+        return students;
+    }
+
+    @GetMapping("/allstudents")
+    @PreAuthorize("hasRole('EVALUATION COMMITTEE MEMBER')")
+    public java.util.List<Student> getAllStudents() {
+        List<Student> students = studentService.getAllStudents();
         return students;
     }
 
@@ -234,6 +245,19 @@ public class FacultyController {
         
         Student updated = studentService.updateStudent(student);
         return updated;
+    }
+
+    @PostMapping("/gradestudent")
+    @PreAuthorize("hasRole('EVALUATION COMMITTEE MEMBER')")
+    public Grades gradeStudent(@RequestBody Grades grades) {
+        Grades createdGrades = gradesService.createGrades(grades);
+        return createdGrades;
+    }
+
+    @GetMapping("/grades/{studentId}")
+    @PreAuthorize("hasRole('EVALUATION COMMITTEE MEMBER')")
+    public Grades getGradesByStudentId(@PathVariable("studentId") Integer studentId) {
+        return gradesService.getGradesByStudentId(studentId);
     }
 
 }

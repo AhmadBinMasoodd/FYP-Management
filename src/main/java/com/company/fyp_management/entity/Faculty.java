@@ -81,8 +81,7 @@ public class Faculty {
     public void setStatus(String status) {
     if ("Supervisor".equals(status) || 
         "Evaluation Committee Member".equals(status) || 
-        "FYP Committee Member".equals(status) || 
-        "Not Approved".equals(status)) {
+        "FYP Committee Member".equals(status)) {
         this.status = status;
     } else {
         this.status = "";

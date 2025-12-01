@@ -2,8 +2,12 @@ package com.company.fyp_management.controller;
 
 import com.company.fyp_management.entity.FileSubmission;
 import com.company.fyp_management.entity.DocumentTypes;
+import com.company.fyp_management.entity.Student;
+import com.company.fyp_management.entity.Grades;
 import com.company.fyp_management.repository.FileSubmissionRepository;
 import com.company.fyp_management.service.DocumentTypesService;
+import com.company.fyp_management.service.StudentService;
+import com.company.fyp_management.service.GradesService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,16 +31,53 @@ public class HomeController {
 
     private final FileSubmissionRepository fileSubmissionRepository;
     private final DocumentTypesService documentTypesService;
+    private final StudentService studentService;
+    private final GradesService gradesService;
 
-    public HomeController(FileSubmissionRepository fileSubmissionRepository, DocumentTypesService documentTypesService) {
+    public HomeController(FileSubmissionRepository fileSubmissionRepository, DocumentTypesService documentTypesService, StudentService studentService, GradesService gradesService) {
         this.fileSubmissionRepository = fileSubmissionRepository;
         this.documentTypesService = documentTypesService;
+        this.studentService = studentService;
+        this.gradesService = gradesService;
     }
 
     @GetMapping(value = "/documenttypes")
     public List<DocumentTypes> getDocumentTypes() {
         List<DocumentTypes> docTypes = documentTypesService.getAllDocumentTypes();
         return docTypes;
+    }
+
+    @GetMapping("/submissions/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public List<FileSubmission> getLatestSubmissionsByStudentId(@PathVariable("id") Integer studentId) {
+        Optional<Student> studentOpt = studentService.getStudentById(studentId);
+        if (studentOpt.isEmpty()) {
+            throw new IllegalArgumentException("Student not found");
+        }
+        Student student = studentOpt.get();
+
+        boolean isProposalSubmitted = student.getProposal();
+        boolean isDesignDocSubmitted = student.getDesignDocument();
+        boolean isTestDocSubmitted = student.getTestDocument();
+        boolean isThesisSubmitted = student.getThesis();
+
+        List<FileSubmission> latestSubmissions = new java.util.ArrayList<>();
+        if (!isProposalSubmitted)
+            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Proposal"));
+        if (!isDesignDocSubmitted)
+            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Design Document"));
+        if (!isTestDocSubmitted)
+            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Test Document"));
+        if (!isThesisSubmitted)
+            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Thesis"));
+
+        return latestSubmissions;
+    }
+
+    @GetMapping("/grades/{studentId}")
+    @PreAuthorize("isAuthenticated()")
+    public Grades getGradesByStudentId(@PathVariable("studentId") Integer studentId) {
+        return gradesService.getGradesByStudentId(studentId);
     }
 
     @PostMapping(value = "/download", consumes = "application/json")
