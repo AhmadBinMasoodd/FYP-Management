@@ -17,9 +17,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.Optional;
 import java.util.List;
+import java.lang.reflect.Field;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
@@ -82,66 +82,69 @@ public class HomeController {
 
     @PostMapping(value = "/download", consumes = "application/json")
     @PreAuthorize("isAuthenticated()")
-    public void downloadFile(@RequestBody Map<String, Object> req, HttpServletResponse response) throws IOException {
-        // try to resolve filename directly if provided
-        String filename = null;
-        if (req != null) {
-            Object fn = req.get("filename");
-            if (fn != null) filename = fn.toString();
+    public void downloadFile(@RequestBody FileSubmission fileSubmission, HttpServletResponse response) throws IOException {
+        // validate body
+        if (fileSubmission == null) {
+            response.setStatus(400);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"request body (file_submission) is required\"}");
+            return;
         }
 
-        // if filename not provided, try to resolve by file_id
-        if (true) {
-            if (req == null || (req.get("file_id") == null && req.get("fileId") == null && req.get("id") == null)) {
-                response.setStatus(400);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"message\":\"file_id or filename is required in request body\"}");
-                return;
-            }
-
-            Integer fileId = null;
-            try {
-                Object idObj = req.get("file_id");
-                if (idObj == null) idObj = req.get("fileId");
-                if (idObj == null) idObj = req.get("id");
-                if (idObj != null) {
-                    fileId = Integer.parseInt(String.valueOf(idObj));
+        // try to extract an integer id from the FileSubmission via reflection (handles different field names)
+        Integer fileId = null;
+        try {
+            Field[] fields = fileSubmission.getClass().getDeclaredFields();
+            for (Field f : fields) {
+                f.setAccessible(true);
+                String name = f.getName().toLowerCase();
+                // common id field name candidates
+                if (name.equals("id") || name.equals("fileid") || name.equals("file_id") || name.endsWith("id")) {
+                    Object val = f.get(fileSubmission);
+                    if (val == null) continue;
+                    if (val instanceof Number) {
+                        fileId = ((Number) val).intValue();
+                    } else {
+                        try {
+                            fileId = Integer.parseInt(String.valueOf(val));
+                        } catch (NumberFormatException ignored) { }
+                    }
+                    if (fileId != null) break;
                 }
-            } catch (NumberFormatException e) {
-                response.setStatus(400);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"message\":\"file_id must be a number\"}");
-                return;
             }
+        } catch (IllegalAccessException ignored) {
+            // fall through - will validate fileId below
+        }
 
-            if (fileId == null) {
-                response.setStatus(400);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"message\":\"file_id is required\"}");
-                return;
-            }
+        if (fileId == null) {
+            response.setStatus(400);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"file id not found in request body\"}");
+            return;
+        }
 
-            Optional<FileSubmission> fsOpt = fileSubmissionRepository.findById(fileId);
-            if (fsOpt.isEmpty()) {
-                response.setStatus(404);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"message\":\"FileSubmission not found for id: " + fileId + "\"}");
-                return;
-            }
-            FileSubmission submission = fsOpt.get();
-            filename = submission.getFilename();
-            if (filename == null || filename.isBlank()) {
-                response.setStatus(404);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"message\":\"No stored filename for FileSubmission id: " + fileId + "\"}");
-                return;
-            }
+        // load persistent object
+        Optional<FileSubmission> fsOpt = fileSubmissionRepository.findById(fileId);
+        if (fsOpt.isEmpty()) {
+            response.setStatus(404);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"FileSubmission not found for id: " + fileId + "\"}");
+            return;
+        }
+        FileSubmission persisted = fsOpt.get();
+
+        // get filename from persistent object and stream it
+        String filename = persisted.getFilename();
+        if (filename == null || filename.isBlank()) {
+            response.setStatus(404);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"No stored filename for FileSubmission id: " + fileId + "\"}");
+            return;
         }
 
         Path uploadsDirPath = Paths.get(uploadDir).toAbsolutePath().normalize();
         Path target = uploadsDirPath.resolve(filename).normalize();
 
-        // basic validation: ensure target is inside uploadsDir and is a regular existing file
         if (!target.startsWith(uploadsDirPath) || !Files.exists(target) || !Files.isRegularFile(target)) {
             response.setStatus(404);
             response.setContentType("application/json");

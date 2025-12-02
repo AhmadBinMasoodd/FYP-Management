@@ -4,10 +4,13 @@ import com.company.fyp_management.entity.FileSubmission;
 import com.company.fyp_management.entity.DocumentTypes;
 import com.company.fyp_management.entity.Student;
 import com.company.fyp_management.entity.Grades;
+import com.company.fyp_management.entity.State;
+import com.company.fyp_management.service.StateService;
 import com.company.fyp_management.service.GradesService;
 import com.company.fyp_management.service.FacultyService;
 import com.company.fyp_management.service.StudentService;
 import com.company.fyp_management.service.FileSubmissionService;
+import com.company.fyp_management.service.DocumentTypesService;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -25,12 +28,16 @@ public class FacultyController {
     private final StudentService studentService;
     private final FileSubmissionService fileSubmissionService;
     private final GradesService gradesService;
+    private final DocumentTypesService documentTypesService;
+    private final StateService stateService;
 
-    public FacultyController(FacultyService facultyService, StudentService studentService, FileSubmissionService fileSubmissionService, GradesService gradesService ) {
+    public FacultyController(FacultyService facultyService, StudentService studentService, FileSubmissionService fileSubmissionService, GradesService gradesService, DocumentTypesService documentTypesService, StateService stateService) {
         this.facultyService = facultyService;
         this.studentService = studentService;
         this.fileSubmissionService = fileSubmissionService;
         this.gradesService = gradesService;
+        this.documentTypesService = documentTypesService;
+        this.stateService = stateService;
     }
 
     @PostMapping("/register")
@@ -260,4 +267,27 @@ public class FacultyController {
         return gradesService.getGradesByStudentId(studentId);
     }
 
+    @PostMapping("/changedeadline")
+    @PreAuthorize("hasRole('FYP COMMITTEE MEMBER')")
+    public DocumentTypes changeDeadline(@RequestBody DocumentTypes document_types) {
+        return documentTypesService.updateDocumentType(document_types);
+    }
+
+    @GetMapping("/releasegrades")
+    @PreAuthorize("hasRole('FYP COMMITTEE MEMBER')")
+    public State releaseGrades() {
+        State state = new State();
+        state.setstateName("release_grades");
+        state.setValue(true);
+        return stateService.updateState(state);
+    }
+
+    @GetMapping("/hidegrades")
+    @PreAuthorize("hasRole('FYP COMMITTEE MEMBER')")
+    public State hideGrades() {
+        State state = new State();
+        state.setstateName("release_grades");
+        state.setValue(false);
+        return stateService.updateState(state);
+    }
 }

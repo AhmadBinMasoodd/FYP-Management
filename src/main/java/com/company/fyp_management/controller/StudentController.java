@@ -1,9 +1,11 @@
 package com.company.fyp_management.controller;
 
 import com.company.fyp_management.entity.FileSubmission;
+import com.company.fyp_management.entity.Grades;
 import com.company.fyp_management.entity.Student;
 import org.springframework.web.bind.annotation.*;
 import com.company.fyp_management.service.StudentService;
+import com.company.fyp_management.service.GradesService;
 import com.company.fyp_management.service.FileSubmissionService;
 import com.company.fyp_management.service.FeedbackService; // added
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,18 +31,21 @@ public class StudentController {
     private final StudentRepository studentRepository;             // NEW
     private final DocumentTypesRepository documentTypesRepository; // NEW
     private final FeedbackService feedbackService;                 // NEW
+    private final GradesService gradesService;
 
     // constructor updated to accept repositories and feedbackService
     public StudentController(StudentService studentService,
                              FileSubmissionService fileSubmissionService,
                              StudentRepository studentRepository,
                              DocumentTypesRepository documentTypesRepository,
+                                GradesService gradesService,
                              FeedbackService feedbackService) { // updated
         this.studentService = studentService;
         this.fileSubmissionService = fileSubmissionService;
         this.studentRepository = studentRepository;
         this.documentTypesRepository = documentTypesRepository;
         this.feedbackService = feedbackService;
+        this.gradesService = gradesService;
     }
 
     @PostMapping("/register")
@@ -106,6 +111,11 @@ public class StudentController {
         }
         Student managedStudent = studentOpt.get();
 
+        // check if student has supervisor
+        if (managedStudent.getSupervisorId() == -1) {
+            throw new IllegalArgumentException("Cannot submit file: student has no assigned supervisor");
+        }
+
         // 2.a) check permission to submit this doc_type based on student's booleans
         if (!isAllowedToSubmit(managedStudent, docType)) {
             throw new IllegalArgumentException("Submission not allowed: student has already submitted this document type or is not permitted to submit it");
@@ -163,6 +173,30 @@ public class StudentController {
             result.add(new SubmissionWithFeedback(submission, feedbacks));
         }
         return result;
+    }
+
+    @GetMapping("/mygrades")
+    @PreAuthorize("hasRole('STUDENT')")
+    public Grades getMyGrades(HttpSession session) {
+        // resolve userId from session
+        Object uid = session.getAttribute("userId");
+        if (uid == null) {
+            throw new IllegalArgumentException("No authenticated user in session");
+        }
+        Integer userId;
+        if (uid instanceof Number) {
+            userId = ((Number) uid).intValue();
+        } else {
+            try {
+                userId = Integer.parseInt(uid.toString());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid userId in session");
+            }
+        }
+
+        // fetch submissions
+        Grades my_grades = gradesService.getGradesByStudentId(userId);
+        return my_grades;
     }
 
     // helper classes
