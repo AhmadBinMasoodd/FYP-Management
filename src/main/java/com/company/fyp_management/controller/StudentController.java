@@ -3,7 +3,9 @@ package com.company.fyp_management.controller;
 import com.company.fyp_management.entity.FileSubmission;
 import com.company.fyp_management.entity.Grades;
 import com.company.fyp_management.entity.Student;
+import com.company.fyp_management.entity.State;
 import org.springframework.web.bind.annotation.*;
+import com.company.fyp_management.service.StateService;
 import com.company.fyp_management.service.StudentService;
 import com.company.fyp_management.service.GradesService;
 import com.company.fyp_management.service.FileSubmissionService;
@@ -32,20 +34,23 @@ public class StudentController {
     private final DocumentTypesRepository documentTypesRepository; // NEW
     private final FeedbackService feedbackService;                 // NEW
     private final GradesService gradesService;
+    private final StateService stateService;
 
     // constructor updated to accept repositories and feedbackService
     public StudentController(StudentService studentService,
-                             FileSubmissionService fileSubmissionService,
-                             StudentRepository studentRepository,
-                             DocumentTypesRepository documentTypesRepository,
-                                GradesService gradesService,
-                             FeedbackService feedbackService) { // updated
+                            FileSubmissionService fileSubmissionService,
+                            StudentRepository studentRepository,
+                            DocumentTypesRepository documentTypesRepository,
+                            GradesService gradesService,
+                            StateService stateService,
+                            FeedbackService feedbackService) { // updated
         this.studentService = studentService;
         this.fileSubmissionService = fileSubmissionService;
         this.studentRepository = studentRepository;
         this.documentTypesRepository = documentTypesRepository;
         this.feedbackService = feedbackService;
         this.gradesService = gradesService;
+        this.stateService = stateService;
     }
 
     @PostMapping("/register")
@@ -192,6 +197,11 @@ public class StudentController {
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Invalid userId in session");
             }
+        }
+
+        State current = stateService.getStateByKey("release_grades");
+        if (!current.getValue()) {
+            throw new IllegalArgumentException("FYP Committe has not released Grades yet.");
         }
 
         // fetch submissions

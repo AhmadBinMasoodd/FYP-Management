@@ -254,9 +254,30 @@ public class FacultyController {
         return updated;
     }
 
+    public boolean can_grade(Integer studentId) {
+        Optional<Student> studentOpt = studentService.getStudentById(studentId);
+        if (studentOpt.isEmpty()) {
+            throw new IllegalArgumentException("Student not found");
+        }
+        Student student = studentOpt.get();
+        Integer supervisorId = student.getSupervisorId();
+        if (supervisorId == null || supervisorId.intValue() == -1) {
+            return false;
+        }
+        if (student.getProposal() == true || student.getDesignDocument() == true || student.getTestDocument() == true || student.getThesis() == true) {
+            return false;
+        }
+        return true;
+    }
+
     @PostMapping("/gradestudent")
     @PreAuthorize("hasRole('EVALUATION COMMITTEE MEMBER')")
     public Grades gradeStudent(@RequestBody Grades grades) {
+        Student student = grades.getStudent();
+        Integer studentId = student.getNumericId();
+        if (!can_grade(studentId)) {
+            throw new IllegalStateException("Student is not eligible for grading");
+        }
         Grades createdGrades = gradesService.createGrades(grades);
         return createdGrades;
     }

@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/auth")
 public class AuthController {
 	@Autowired
