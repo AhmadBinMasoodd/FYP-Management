@@ -14,20 +14,29 @@ public class Grades {
     @JoinColumn(name = "student_id", nullable = false, unique = true)
     private Student student;
 
+    // Rubric 1: OOP & Design
     @Column(nullable = false)
     private int rubric1;
 
+    // Rubric 2: Workflow
     @Column(nullable = false)
     private int rubric2;
 
+    // Rubric 3: Implementation
     @Column(nullable = false)
     private int rubric3;
 
+    // Rubric 4: GitHub
     @Column(nullable = false)
     private int rubric4;
 
+    // Rubric 5: Code Quality & Documentation
     @Column(nullable = false)
     private int rubric5;
+
+    // Rubric 6: UI/Usability
+    @Column(nullable = false)
+    private int rubric6;
 
     @Column(nullable = false)
     private char grade;
@@ -101,13 +110,24 @@ public class Grades {
         return rubric5;
     }
 
+    public void setRubric6(int rubric6) {
+        if (rubric6 < 1 || rubric6 > 5) {
+            throw new IllegalArgumentException("Rubric must be between 1 and 5");
+        }
+        this.rubric6 = rubric6;
+    }
+
+    public int getRubric6() {
+        return rubric6;
+    }
+
     public void setGrade(char grade) {
         this.grade = grade;
     }
 
     public void setGrade(){
-        int total = this.rubric1 + this.rubric2 + this.rubric3 + this.rubric4 + this.rubric5;
-        double average = total / 5.0;
+        int total = this.rubric1 + this.rubric2 + this.rubric3 + this.rubric4 + this.rubric5 + this.rubric6;
+        double average = total / 6.0;
 
         if (average >= 4.5) {
             this.grade = 'A';
@@ -129,8 +149,8 @@ public class Grades {
     @PrePersist
     @PreUpdate
     private void computeGradeBeforeSave() {
-        int total = this.rubric1 + this.rubric2 + this.rubric3 + this.rubric4 + this.rubric5;
-        double average = total / 5.0;
+        int total = this.rubric1 + this.rubric2 + this.rubric3 + this.rubric4 + this.rubric5 + this.rubric6;
+        double average = total / 6.0;
         if (average >= 4.5) {
             this.grade = 'A';
         } else if (average >= 3.5) {

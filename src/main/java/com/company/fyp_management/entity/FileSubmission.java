@@ -1,5 +1,6 @@
 package com.company.fyp_management.entity;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 
@@ -15,6 +16,7 @@ public class FileSubmission {
 
     @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
+    @JsonIgnore
     private Student student;
 
     @Column(nullable = false)
@@ -36,6 +38,10 @@ public class FileSubmission {
     // Getters and setters
     public Integer getFile_id() {
         return file_id;
+    }
+
+    public void setFile_id(Integer file_id) {
+        this.file_id = file_id;
     }
 
     public void setStudent(Student student) {
@@ -64,6 +70,21 @@ public class FileSubmission {
 
     public String getDoc_type() {
         return documentType == null ? null : documentType.getDoc_type();
+    }
+
+    // Include student_id in JSON response (even though student object is @JsonIgnore)
+    public Integer getStudent_id() {
+        return student == null ? null : student.getNumericId();
+    }
+
+    // Include student name in JSON response
+    public String getStudent_name() {
+        return student == null ? null : student.getName();
+    }
+
+    // Include student email in JSON response
+    public String getStudent_email() {
+        return student == null ? null : student.getEmail();
     }
 
     public boolean getIs_approved() {

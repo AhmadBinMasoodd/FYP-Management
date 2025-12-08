@@ -54,24 +54,10 @@ public class HomeController {
         if (studentOpt.isEmpty()) {
             throw new IllegalArgumentException("Student not found");
         }
-        Student student = studentOpt.get();
 
-        boolean isProposalSubmitted = student.getProposal();
-        boolean isDesignDocSubmitted = student.getDesignDocument();
-        boolean isTestDocSubmitted = student.getTestDocument();
-        boolean isThesisSubmitted = student.getThesis();
-
-        List<FileSubmission> latestSubmissions = new java.util.ArrayList<>();
-        if (!isProposalSubmitted)
-            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Proposal"));
-        if (!isDesignDocSubmitted)
-            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Design Document"));
-        if (!isTestDocSubmitted)
-            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Test Document"));
-        if (!isThesisSubmitted)
-            latestSubmissions.add(fileSubmissionRepository.findLatestSubmission(studentId, "Thesis"));
-
-        return latestSubmissions;
+        // Return all submissions for this student, sorted by date
+        List<FileSubmission> submissions = fileSubmissionRepository.findAllByStudentIdOrderBySubmissionDatetimeDesc(studentId);
+        return submissions;
     }
 
     @GetMapping("/grades/{studentId}")

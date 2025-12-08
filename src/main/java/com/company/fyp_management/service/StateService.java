@@ -21,5 +21,9 @@ public class StateService {
         return statesRepository.findById(key)
                 .orElseThrow(() -> new RuntimeException("State not found with key " + key));
     }
+
+    public State getStateByName(String name) {
+        return statesRepository.findById(name).orElse(null);
+    }
 }
 

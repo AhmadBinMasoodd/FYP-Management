@@ -53,6 +53,10 @@ public class Student {
         return student_id;
     }
 
+    public void setNumericId(Integer student_id) {
+        this.student_id = student_id;
+    }
+
     public String getEmail() {
         return email;
     }
