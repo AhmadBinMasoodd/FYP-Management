@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.company.fyp_management.repository.StudentRepository;
 import com.company.fyp_management.repository.FacultyRepository;
+import com.company.fyp_management.repository.AdminRepository;
+import com.company.fyp_management.entity.Admin;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,6 +26,9 @@ public class AuthController {
 
 	@Autowired
 	private FacultyRepository facultyRepository;
+
+	@Autowired
+	private AdminRepository adminRepository;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder; // NEW
@@ -65,27 +70,27 @@ public class AuthController {
 			return ResponseEntity.badRequest().body(java.util.Map.of("message", "invalid numeric id part"));
 		}
 
-		// Helper to set session, security context and return response
-		java.util.function.BiFunction<Object, String, ResponseEntity<?>> onSuccess = (userObj, userRole) -> {
-			// set session attributes (numeric id stored)
-			session.setAttribute("userId", numericId);
-			session.setAttribute("role", userRole);
-			session.setAttribute("user", userObj);
+        // Helper to set session, security context and return response
+        java.util.function.BiFunction<Object, String, ResponseEntity<?>> onSuccess = (userObj, userRole) -> {
+            // set session attributes (numeric id stored)
+            session.setAttribute("userId", numericId);
+            session.setAttribute("role", userRole);
+            session.setAttribute("user", userObj);
 
-			// set Spring Security Authentication so other secured endpoints can rely on Principal
-			List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + userRole.toUpperCase()));
-			UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-				numericId, // principal (numeric id)
-				null,
-				authorities
-			);
-			SecurityContextHolder.getContext().setAuthentication(auth);
+            // set Spring Security Authentication so other secured endpoints can rely on Principal
+            List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + userRole.toUpperCase()));
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                numericId, // principal (numeric id)
+                null,
+                authorities
+            );
+            SecurityContextHolder.getContext().setAuthentication(auth);
 
-			// Persist security context into HTTP session to survive across requests
-			session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+            // Persist security context into HTTP session to survive across requests
+            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
-			return ResponseEntity.ok(java.util.Map.of("message", "Login successful", "role", userRole));
-		};
+            return ResponseEntity.ok(java.util.Map.of("message", "Login successful", "role", userRole));
+        };
 
 		boolean isStudent = up.startsWith("STU-");
 		if (isStudent) {
@@ -144,6 +149,73 @@ public class AuthController {
 		SecurityContextHolder.clearContext();
 		session.invalidate();
 		return ResponseEntity.ok(java.util.Map.of("message", "Logged out"));
+	}
+
+	// Admin login DTO
+	static class AdminLoginRequest {
+		private String username;
+		private String password;
+
+		public String getUsername() { return username; }
+		public void setUsername(String username) { this.username = username; }
+		public String getPassword() { return password; }
+		public void setPassword(String password) { this.password = password; }
+	}
+
+	@PostMapping("/admin/login")
+	public ResponseEntity<?> adminLogin(@RequestBody AdminLoginRequest req, HttpSession session) {
+		String username = req.getUsername();
+		String password = req.getPassword();
+
+		if (username == null || username.isBlank() || password == null || password.isBlank()) {
+			return ResponseEntity.badRequest().body(java.util.Map.of("message", "Username and password are required"));
+		}
+
+		java.util.Optional<Admin> adminOpt = adminRepository.findByUsername(username);
+		if (adminOpt.isPresent()) {
+			Admin admin = adminOpt.get();
+			// Check password - support both plain text and encoded passwords
+			boolean passwordMatches = false;
+			String storedPassword = admin.getPassword();
+			if (storedPassword != null) {
+				// Try encoded password first
+				try {
+					passwordMatches = passwordEncoder.matches(password, storedPassword);
+				} catch (Exception e) {
+					// If encoding check fails, try plain text comparison
+					passwordMatches = password.equals(storedPassword);
+				}
+				// Fallback to plain text if encoded didn't match
+				if (!passwordMatches) {
+					passwordMatches = password.equals(storedPassword);
+				}
+			}
+
+			if (passwordMatches) {
+				// Set session attributes
+				session.setAttribute("userId", admin.getId());
+				session.setAttribute("role", "admin");
+				session.setAttribute("user", admin);
+
+				// Set Spring Security Authentication
+				List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_ADMIN"));
+				UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+					admin.getId(),
+					null,
+					authorities
+				);
+				SecurityContextHolder.getContext().setAuthentication(auth);
+				session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+
+				return ResponseEntity.ok(java.util.Map.of(
+					"message", "Admin login successful",
+					"role", "admin",
+					"adminId", admin.getId(),
+					"username", admin.getUsername()
+				));
+			}
+		}
+		return ResponseEntity.status(401).body(java.util.Map.of("message", "Invalid admin credentials"));
 	}
 
 	@GetMapping("/me")

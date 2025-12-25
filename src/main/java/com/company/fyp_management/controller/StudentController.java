@@ -21,6 +21,7 @@ import com.company.fyp_management.repository.StudentRepository;
 import com.company.fyp_management.repository.DocumentTypesRepository;
 import com.company.fyp_management.entity.DocumentTypes;
 import com.company.fyp_management.entity.Feedback; // added
+import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -149,6 +150,7 @@ public class StudentController {
 
     @GetMapping("/mysubmissions")
     @PreAuthorize("hasRole('STUDENT')")
+    @Transactional(readOnly = true)
     public List<SubmissionWithFeedback> getMySubmissions(HttpSession session) {
         // resolve userId from session
         Object uid = session.getAttribute("userId");
@@ -277,6 +279,13 @@ public class StudentController {
                 // no-op for unknown types
                 break;
         }
+    }
+
+    // Get all document deadlines (for students to view)
+    @GetMapping("/deadlines")
+    @PreAuthorize("hasRole('STUDENT')")
+    public List<DocumentTypes> getDeadlines() {
+        return documentTypesRepository.findAll();
     }
 
 }

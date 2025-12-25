@@ -1,5 +1,6 @@
 package com.company.fyp_management.entity;
 import org.hibernate.annotations.CreationTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
@@ -12,8 +13,9 @@ public class Feedback {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer feedback_id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "submission_id", nullable = false)
+    @JsonIgnore
     private FileSubmission submission;
 
     @Column(nullable = false)

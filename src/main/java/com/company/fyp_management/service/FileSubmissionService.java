@@ -2,6 +2,7 @@ package com.company.fyp_management.service;
 
 import com.company.fyp_management.entity.FileSubmission;
 import com.company.fyp_management.repository.FileSubmissionRepository;
+import com.company.fyp_management.repository.FeedbackRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +19,15 @@ import java.util.List;
 @Service
 public class FileSubmissionService {
     private final FileSubmissionRepository fileSubmissionRepository;
+    private final FeedbackRepository feedbackRepository;
 
     // configurable upload dir, default to resources static uploads
     @Value("${file.upload-dir:src/main/resources/static/uploads}")
     private String uploadDir;
 
-    public FileSubmissionService(FileSubmissionRepository fileSubmissionRepository) {
+    public FileSubmissionService(FileSubmissionRepository fileSubmissionRepository, FeedbackRepository feedbackRepository) {
         this.fileSubmissionRepository = fileSubmissionRepository;
+        this.feedbackRepository = feedbackRepository;
     }
 
     // New: save uploaded file to configured uploads dir and persist entity
@@ -81,5 +84,39 @@ public class FileSubmissionService {
 
     public FileSubmission updateFileSubmission(FileSubmission updatedFileSubmission) {
         return fileSubmissionRepository.save(updatedFileSubmission);
+    }
+
+    // Delete a file submission by ID (used when supervisor rejects/requests revision)
+    @Transactional
+    public void deleteFileSubmission(Integer id) {
+        FileSubmission submission = fileSubmissionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("FileSubmission not found with id " + id));
+        
+        // First delete all feedbacks associated with this submission (foreign key constraint)
+        feedbackRepository.deleteAllBySubmissionId(id);
+        
+        // Optionally delete the physical file from disk
+        try {
+            Path uploadsDirPath = Paths.get(Objects.requireNonNull(uploadDir)).toAbsolutePath().normalize();
+            Path filePath = uploadsDirPath.resolve(submission.getFilename()).normalize();
+            if (Files.exists(filePath) && filePath.startsWith(uploadsDirPath)) {
+                Files.delete(filePath);
+            }
+        } catch (IOException e) {
+            // Log but don't fail - the DB record deletion is more important
+            System.err.println("Warning: Could not delete file from disk: " + e.getMessage());
+        }
+        
+        fileSubmissionRepository.deleteById(id);
+    }
+
+    // Get all approved submissions (for Evaluation Committee)
+    public List<FileSubmission> getAllApprovedSubmissions() {
+        return fileSubmissionRepository.findAllApprovedSubmissions();
+    }
+
+    // Get approved submissions for a specific student
+    public List<FileSubmission> getApprovedSubmissionsByStudentId(Integer studentId) {
+        return fileSubmissionRepository.findApprovedSubmissionsByStudentId(studentId);
     }
 }
